@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:file_picker/file_picker.dart';
 import '../widgets/common.dart';
 import '../services/bat_service.dart';
 
@@ -8,9 +7,9 @@ class SplashScreenManager extends StatefulWidget {
   @override State<SplashScreenManager> createState() => _SplashScreenManagerState();
 }
 
-class _SplashScreenManagerState extends State<SplashScreenManager> {
+class _SplashScreenManagerState extends State<SplashScreenManager>
+    with LogMixin, DirectoryPickerMixin {
   final _srcCtrl = TextEditingController();
-  String _log = 'Splash Screen Manager ready.\n';
   int _msgIndex = 0;
 
   final _messages = [
@@ -26,6 +25,7 @@ class _SplashScreenManagerState extends State<SplashScreenManager> {
   @override
   void initState() {
     super.initState();
+    log = 'Splash Screen Manager ready.\n';
     Future.doWhile(() async {
       await Future.delayed(const Duration(milliseconds: 800));
       if (!mounted) return false;
@@ -34,25 +34,18 @@ class _SplashScreenManagerState extends State<SplashScreenManager> {
     });
   }
 
-  void _appendLog(String msg) => setState(() => _log += '$msg\n');
-
-  Future<void> _browseSrc() async {
-    final result = await FilePicker.platform.getDirectoryPath();
-    if (result != null) setState(() => _srcCtrl.text = result);
-  }
-
   Future<void> _installSplash() async {
     final src = _srcCtrl.text.trim();
-    if (src.isEmpty) { _appendLog('⚠ Select folder with splash files first.'); return; }
-    _appendLog('▶ Installing Graystone splash...');
+    if (src.isEmpty) { appendLog('⚠ Select folder with splash files first.'); return; }
+    appendLog('▶ Installing Graystone splash...');
     await BatService.runBat(BatService.installSplashBat(src), 'install-splash.bat');
-    _appendLog('✓ Running installer in terminal\n');
+    appendLog('✓ Running installer in terminal\n');
   }
 
   Future<void> _restoreSplash() async {
-    _appendLog('▶ Restoring original splash...');
+    appendLog('▶ Restoring original splash...');
     await BatService.runBat(BatService.restoreSplashBat(), 'restore-splash.bat');
-    _appendLog('✓ Restore running in terminal\n');
+    appendLog('✓ Restore running in terminal\n');
   }
 
   @override
@@ -107,7 +100,7 @@ class _SplashScreenManagerState extends State<SplashScreenManager> {
                   label: 'Folder with splash.html and splash.js',
                   hint: r'C:\Users\...\splash-files',
                   controller: _srcCtrl,
-                  onBrowse: _browseSrc,
+                  onBrowse: () => pickDirectoryInto(_srcCtrl),
                 ),
                 GBtn(label: '🎨 Install Splash Screen',
                   onTap: _installSplash, fullWidth: true),
@@ -200,17 +193,8 @@ class _SplashScreenManagerState extends State<SplashScreenManager> {
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.all(16),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Row(children: [
-                    const Text('Splash Log',
-                      style: TextStyle(color: kText, fontWeight: FontWeight.w700, fontSize: 14)),
-                    const Spacer(),
-                    GBtn(label: 'Clear', onTap: () => setState(() => _log = ''),
-                      color: kPanel2, textColor: kMuted),
-                  ]),
-                  const SizedBox(height: 8),
-                  Expanded(child: GLogBox(_log)),
-                ]),
+                child: GLogPanel(title: 'Splash Log', log: log, onClear: clearLog,
+                  titleSize: 14, gap: 8),
               ),
             ),
           ]),

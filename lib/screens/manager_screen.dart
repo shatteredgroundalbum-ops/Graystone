@@ -50,10 +50,7 @@ class _ManagerScreenState extends State<ManagerScreen> {
   void _setStatus(String panel, String msg, _Tone tone) =>
       setState(() => _status[panel] = (msg, tone));
 
-  String get _desktop {
-    final home = Platform.environment['USERPROFILE'] ?? '';
-    return '$home\\Desktop';
-  }
+  String get _desktop => BatService.desktop;
 
   // ── Upload ────────────────────────────────
   Future<void> _pickFiles() async {

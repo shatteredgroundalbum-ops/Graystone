@@ -28,38 +28,41 @@ class LanguageInstallerScreen extends StatefulWidget {
   @override State<LanguageInstallerScreen> createState() => _LanguageInstallerScreenState();
 }
 
-class _LanguageInstallerScreenState extends State<LanguageInstallerScreen> {
+class _LanguageInstallerScreenState extends State<LanguageInstallerScreen> with LogMixin {
   int? _selected;
-  String _log = 'Language installer ready.\nSelect a language and click Download.\n';
   final Map<int, String> _statuses = {};
 
-  void _appendLog(String msg) => setState(() => _log += '$msg\n');
+  @override
+  void initState() {
+    super.initState();
+    log = 'Language installer ready.\nSelect a language and click Download.\n';
+  }
 
   Future<void> _downloadSelected() async {
     if (_selected == null) {
-      _appendLog('⚠ Select a language first.');
+      appendLog('⚠ Select a language first.');
       return;
     }
     final lang = _langs[_selected!];
-    _appendLog('▶ Downloading ${lang['name']}...');
+    appendLog('▶ Downloading ${lang['name']}...');
     final bat = BatService.downloadLangBat(lang['name']!, lang['url']!, lang['file']!);
     await BatService.runBat(bat, 'download-${lang['name']!.replaceAll(' ', '-').toLowerCase()}.bat');
     setState(() => _statuses[_selected!] = 'Downloading...');
-    _appendLog('✓ Download started in terminal\n');
+    appendLog('✓ Download started in terminal\n');
   }
 
   Future<void> _downloadAll() async {
-    _appendLog('▶ Generating download-all-languages.bat...');
+    appendLog('▶ Generating download-all-languages.bat...');
     final bat = BatService.downloadAllLangsBat(
       _langs.map((l) => {'name': l['name']!, 'url': l['url']!, 'file': l['file']!}).toList());
     await BatService.runBat(bat, 'download-all-languages.bat');
-    _appendLog('✓ All-languages downloader launched in terminal\n');
+    appendLog('✓ All-languages downloader launched in terminal\n');
   }
 
   Future<void> _checkInstalled() async {
-    _appendLog('▶ Checking installed languages...');
+    appendLog('▶ Checking installed languages...');
     await BatService.runBat(BatService.checkLangsBat(), 'check-languages.bat');
-    _appendLog('✓ Check running in terminal\n');
+    appendLog('✓ Check running in terminal\n');
   }
 
   Color _typeColor(String type) {
@@ -158,11 +161,11 @@ class _LanguageInstallerScreenState extends State<LanguageInstallerScreen> {
                 const Text('Install Log',
                   style: TextStyle(color: kText, fontWeight: FontWeight.w700, fontSize: 16)),
                 const Spacer(),
-                GBtn(label: 'Clear', onTap: () => setState(() => _log = ''),
+                GBtn(label: 'Clear', onTap: clearLog,
                   color: kPanel2, textColor: kMuted),
               ]),
               const SizedBox(height: 12),
-              Expanded(child: GLogBox(_log)),
+              Expanded(child: GLogBox(log)),
               const SizedBox(height: 12),
               GCard(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 const GCardTitle('Languages Folder'),

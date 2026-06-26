@@ -1,0 +1,19 @@
+# Flutter / Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+build/
+.packages
+.pub-cache/
+.pub/
+*.iml
+.idea/
+.vscode/
+
+# Build / release artifacts
+dist/
+release/
+
+# OS
+.DS_Store
+Thumbs.db

@@ -234,7 +234,7 @@ pause''';
 
   static String replaceTextBat(String folder, String pattern, String find, String replace) => header() + '''
 echo Replacing "$find" with "$replace" in $pattern files...
-powershell -ExecutionPolicy Bypass -Command "Get-ChildItem -Path '${_ps(folder)}' -Filter '${_ps(pattern)}' -Recurse | ForEach-Object { (Get-Content \$_.FullName).Replace('${_ps(find)}','${_ps(replace)}') | Set-Content \$_.FullName }"
+powershell -ExecutionPolicy Bypass -Command "Get-ChildItem -Path '${_ps(folder)}' -Filter '${_ps(pattern)}' -Recurse | ForEach-Object { (Get-Content -Raw \$_.FullName).Replace('${_ps(find)}','${_ps(replace)}') | Set-Content \$_.FullName }"
 echo Done! Text replaced.
 pause''';
 }

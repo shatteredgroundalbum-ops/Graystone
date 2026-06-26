@@ -61,17 +61,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const GPathBox(r'Downloads: %USERPROFILE%\Graystone_Downloads\'),
             const SizedBox(height: 8),
             Row(children: [
-              GBtn(label: '📂 Open Output', onTap: () async {
-                await BatService.runBat(
-                  '@echo off\nstart "" "%USERPROFILE%\\Graystone_Output"\n',
-                  'open-output.bat');
-              }, color: kPanel2, textColor: kAccent2),
+              GBtn(label: '📂 Open Output',
+                onTap: () => _openFolder(context, 'Graystone_Output', 'open-output.bat'),
+                color: kPanel2, textColor: kAccent2),
               const SizedBox(width: 8),
-              GBtn(label: '📂 Open Languages', onTap: () async {
-                await BatService.runBat(
-                  '@echo off\nstart "" "%USERPROFILE%\\Graystone_Languages"\n',
-                  'open-langs.bat');
-              }, color: kPanel2, textColor: kAccent2),
+              GBtn(label: '📂 Open Languages',
+                onTap: () => _openFolder(context, 'Graystone_Languages', 'open-langs.bat'),
+                color: kPanel2, textColor: kAccent2),
             ]),
           ])),
 
@@ -91,6 +87,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ]),
       ),
     );
+  }
+
+  Future<void> _openFolder(BuildContext context, String folder, String batName) async {
+    try {
+      await BatService.runBat(
+        '@echo off\nstart "" "%USERPROFILE%\\$folder"\n', batName);
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not open folder: $e')));
+      }
+    }
   }
 
   Widget _Toggle(String title, String subtitle, bool value, ValueChanged<bool> onChanged) {

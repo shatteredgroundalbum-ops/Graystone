@@ -20,8 +20,10 @@ class _AsarToolsScreenState extends State<AsarToolsScreen>
 
   Future<void> _runOp(String bat, String fname, String label) async {
     appendLog('▶ $label');
-    await BatService.runBat(bat, fname);
-    appendLog('✓ Running in terminal...\n');
+    await runLogged(() async {
+      await BatService.runBat(bat, fname);
+      appendLog('✓ Running in terminal...\n');
+    }, onError: 'Could not run $fname');
   }
 
   @override

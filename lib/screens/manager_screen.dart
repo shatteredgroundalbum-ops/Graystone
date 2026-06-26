@@ -52,11 +52,25 @@ class _ManagerScreenState extends State<ManagerScreen> {
 
   String get _desktop => BatService.desktop;
 
+  Future<void> _runBatStatus(String panel, String content, String name,
+      String success, {_Tone tone = _Tone.success}) async {
+    try {
+      await BatService.runBat(content, name);
+      _setStatus(panel, success, tone);
+    } catch (e) {
+      _setStatus(panel, 'Could not run $name: $e', _Tone.error);
+    }
+  }
+
   // ── Upload ────────────────────────────────
   Future<void> _pickFiles() async {
-    final result = await FilePicker.platform.pickFiles(allowMultiple: true);
-    if (result != null) {
-      setState(() => _staged.addAll(result.files));
+    try {
+      final result = await FilePicker.platform.pickFiles(allowMultiple: true);
+      if (result != null && mounted) {
+        setState(() => _staged.addAll(result.files));
+      }
+    } catch (e) {
+      _setStatus('upload', 'Could not pick files: $e', _Tone.error);
     }
   }
 
@@ -108,19 +122,14 @@ class _ManagerScreenState extends State<ManagerScreen> {
           _setStatus('download', 'Enter a path first', _Tone.error);
           return;
         }
-        bat = BatService.header() +
-            '\necho Zipping to Desktop...\n'
-                'powershell -ExecutionPolicy Bypass -Command "Compress-Archive -Path \'$cp\' -DestinationPath \'%DESKTOP%\\anythingllm-custom.zip\' -Force"\n'
-                'echo Done! Saved to: %DESKTOP%\\anythingllm-custom.zip\npause';
+        bat = BatService.zipCustomPathBat(cp);
         fname = 'download-anythingllm-custom.bat';
         break;
       default:
         return;
     }
-    await BatService.runBat(bat, fname);
-    _setStatus('download',
-        'BAT generated and running. The zip will appear on your Desktop.',
-        _Tone.success);
+    await _runBatStatus('download', bat, fname,
+        'BAT generated and running. The zip will appear on your Desktop.');
   }
 
   // ── Find ──────────────────────────────────
@@ -130,28 +139,23 @@ class _ManagerScreenState extends State<ManagerScreen> {
       _setStatus('find', 'Enter a filename first', _Tone.error);
       return;
     }
-    await BatService.runBat(BatService.findFileBat(name), 'find-$name.bat');
-    _setStatus('find',
-        'BAT running — matching files will appear in Desktop\\found-files',
-        _Tone.success);
+    await _runBatStatus('find', BatService.findFileBat(name), 'find-$name.bat',
+        'BAT running — matching files will appear in Desktop\\found-files');
   }
 
   // ── Extract ───────────────────────────────
   Future<void> _generateExtractBat(String type) async {
     final bat = type == 'http' ? BatService.zipHttpBat() : BatService.zipFullBat();
-    await BatService.runBat(bat, 'extract-asar-$type.bat');
-    _setStatus('extract',
-        'BAT running — extract + zip will appear on your Desktop.', _Tone.success);
+    await _runBatStatus('extract', bat, 'extract-asar-$type.bat',
+        'BAT running — extract + zip will appear on your Desktop.');
   }
 
   // ── Install ───────────────────────────────
   Future<void> _generateInstallBat() async {
-    await BatService.runBat(
+    await _runBatStatus('install',
         BatService.installFilesBat(r'%DESKTOP%\anythingllm-install'),
-        'install-into-anythingllm.bat');
-    _setStatus('install',
-        'BAT running. Put files in Desktop\\anythingllm-install first, then re-run if needed.',
-        _Tone.success);
+        'install-into-anythingllm.bat',
+        'BAT running. Put files in Desktop\\anythingllm-install first, then re-run if needed.');
   }
 
   // ── Splash ────────────────────────────────
@@ -163,10 +167,9 @@ echo Place splash.html and splash.js in:
 echo %DESKTOP%\\anythingllm-install\\
 echo Then run install-into-anythingllm.bat
 pause''';
-    await BatService.runBat(bat, 'setup-splash.bat');
-    _setStatus('splash',
+    await _runBatStatus('splash', bat, 'setup-splash.bat',
         'Instructions BAT running. Put splash.html/splash.js in Desktop\\anythingllm-install, then run the install BAT.',
-        _Tone.info);
+        tone: _Tone.info);
   }
 
   @override

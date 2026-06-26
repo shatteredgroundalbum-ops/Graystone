@@ -1,9 +1,22 @@
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 
+/// Thrown when generating, writing, or launching a batch script fails.
+class BatServiceException implements Exception {
+  final String message;
+  final Object? cause;
+  BatServiceException(this.message, [this.cause]);
+  @override
+  String toString() => cause == null ? message : '$message ($cause)';
+}
+
 class BatService {
   static String get _userProfile => Platform.environment['USERPROFILE'] ?? '';
   static String get desktop => '$_userProfile\\Desktop';
+
+  /// Escapes a value for safe embedding inside a single-quoted PowerShell
+  /// string literal (single quotes are escaped by doubling them).
+  static String _ps(String s) => s.replaceAll("'", "''");
 
   static const anythingLlmPaths = {
     'Install':   r'%LOCALAPPDATA%\Programs\AnythingLLM\resources',
@@ -24,22 +37,37 @@ set STORAGE=%APPDATA_DIR%\\anythingllm-desktop\\storage
 ''';
 
   static Future<String> writeBat(String name, String content) async {
-    final dir = await getTemporaryDirectory();
-    final file = File('${dir.path}\\$name');
-    await file.writeAsString(content);
-    return file.path;
+    try {
+      final dir = await getTemporaryDirectory();
+      final file = File('${dir.path}\\$name');
+      await file.writeAsString(content);
+      return file.path;
+    } catch (e) {
+      throw BatServiceException('Could not write script "$name"', e);
+    }
   }
 
   static Future<String> runBat(String content, String name) async {
     final path = await writeBat(name, content);
-    await Process.start('cmd', ['/c', 'start', 'cmd', '/k', path],
-      runInShell: true, mode: ProcessStartMode.detached);
-    return path;
+    try {
+      await Process.start('cmd', ['/c', 'start', 'cmd', '/k', path],
+        runInShell: true, mode: ProcessStartMode.detached);
+      return path;
+    } catch (e) {
+      throw BatServiceException('Could not launch script "$name"', e);
+    }
   }
 
   static Future<void> saveBatToDesktop(String name, String content) async {
-    final file = File('$desktop\\$name');
-    await file.writeAsString(content);
+    if (_userProfile.isEmpty) {
+      throw BatServiceException('USERPROFILE is not set; cannot locate Desktop');
+    }
+    try {
+      final file = File('$desktop\\$name');
+      await file.writeAsString(content);
+    } catch (e) {
+      throw BatServiceException('Could not save "$name" to Desktop', e);
+    }
   }
 
   // ── ASAR Operations ───────────────────────
@@ -68,6 +96,12 @@ pause''';
 echo Zipping storage to Desktop...
 powershell -ExecutionPolicy Bypass -Command "Compress-Archive -Path '%STORAGE%' -DestinationPath '%DESKTOP%\\anythingllm-storage.zip' -Force"
 echo Done! Saved to: %DESKTOP%\\anythingllm-storage.zip
+pause''';
+
+  static String zipCustomPathBat(String path) => header() + '''
+echo Zipping to Desktop...
+powershell -ExecutionPolicy Bypass -Command "Compress-Archive -Path '${_ps(path)}' -DestinationPath '%DESKTOP%\\anythingllm-custom.zip' -Force"
+echo Done! Saved to: %DESKTOP%\\anythingllm-custom.zip
 pause''';
 
   static String repackAsarBat() => header() + '''
@@ -133,7 +167,7 @@ pause''';
   static String downloadLangBat(String name, String url, String filename) => header() + '''
 echo Downloading $name...
 if not exist "%USERPROFILE%\\Graystone_Languages" mkdir "%USERPROFILE%\\Graystone_Languages"
-powershell -ExecutionPolicy Bypass -Command "Invoke-WebRequest -Uri '$url' -OutFile '%USERPROFILE%\\Graystone_Languages\\$filename' -UseBasicParsing"
+powershell -ExecutionPolicy Bypass -Command "Invoke-WebRequest -Uri '${_ps(url)}' -OutFile '%USERPROFILE%\\Graystone_Languages\\${_ps(filename)}' -UseBasicParsing"
 echo Downloaded: $filename
 echo Saved to: %USERPROFILE%\\Graystone_Languages\\
 pause''';
@@ -146,7 +180,7 @@ echo.
 ''';
     for (final lang in langs) {
       bat += '''echo Downloading ${lang['name']}...
-powershell -ExecutionPolicy Bypass -Command "Invoke-WebRequest -Uri '${lang['url']}' -OutFile '%USERPROFILE%\\Graystone_Languages\\${lang['file']}' -UseBasicParsing"
+powershell -ExecutionPolicy Bypass -Command "Invoke-WebRequest -Uri '${_ps(lang['url'] ?? '')}' -OutFile '%USERPROFILE%\\Graystone_Languages\\${_ps(lang['file'] ?? '')}' -UseBasicParsing"
 echo Done: ${lang['file']}
 echo.
 ''';
@@ -187,7 +221,7 @@ pause''';
 
   static String zipFilesBat(String folder, String pattern) => header() + '''
 echo Zipping $pattern from $folder...
-powershell -ExecutionPolicy Bypass -Command "Get-ChildItem -Path '$folder' -Filter '$pattern' -Recurse | Compress-Archive -DestinationPath '%DESKTOP%\\matched-files.zip' -Force"
+powershell -ExecutionPolicy Bypass -Command "Get-ChildItem -Path '${_ps(folder)}' -Filter '${_ps(pattern)}' -Recurse | Compress-Archive -DestinationPath '%DESKTOP%\\matched-files.zip' -Force"
 echo Done! Saved to Desktop\\matched-files.zip
 pause''';
 
@@ -200,7 +234,7 @@ pause''';
 
   static String replaceTextBat(String folder, String pattern, String find, String replace) => header() + '''
 echo Replacing "$find" with "$replace" in $pattern files...
-powershell -ExecutionPolicy Bypass -Command "Get-ChildItem -Path '$folder' -Filter '$pattern' -Recurse | ForEach-Object { (Get-Content \$_.FullName) -replace '$find','$replace' | Set-Content \$_.FullName }"
+powershell -ExecutionPolicy Bypass -Command "Get-ChildItem -Path '${_ps(folder)}' -Filter '${_ps(pattern)}' -Recurse | ForEach-Object { (Get-Content \$_.FullName).Replace('${_ps(find)}','${_ps(replace)}') | Set-Content \$_.FullName }"
 echo Done! Text replaced.
 pause''';
 }

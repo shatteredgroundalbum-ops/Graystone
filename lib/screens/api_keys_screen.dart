@@ -40,31 +40,50 @@ class _ApiKeysScreenState extends State<ApiKeysScreen> {
     super.dispose();
   }
 
+  void _snack(String msg, Color bg) {
+    if (mounted) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(msg), backgroundColor: bg));
+    }
+  }
+
   Future<void> _loadKeys() async {
-    final prefs = await SharedPreferences.getInstance();
-    final keys = prefs.getKeys().where((k) => k.startsWith('graystone_key_'));
-    setState(() {
-      _savedKeys = {for (final k in keys)
-        k.replaceFirst('graystone_key_', ''): prefs.getString(k) ?? ''};
-    });
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final keys = prefs.getKeys().where((k) => k.startsWith('graystone_key_'));
+      setState(() {
+        _savedKeys = {for (final k in keys)
+          k.replaceFirst('graystone_key_', ''): prefs.getString(k) ?? ''};
+      });
+    } catch (e) {
+      _snack('Could not load saved keys: $e', const Color(0xFF7F1D1D));
+    }
   }
 
   Future<void> _saveKey() async {
     final key = _keyCtrl.text.trim();
     if (key.isEmpty) return;
     final envKey = _detectedEnvKey ?? 'CUSTOM_API_KEY';
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('graystone_key_$envKey', key);
-    setState(() { _savedKeys[envKey] = key; });
-    _keyCtrl.clear();
-    _detectedProvider = null;
-    _detectedEnvKey = null;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('graystone_key_$envKey', key);
+      setState(() { _savedKeys[envKey] = key; });
+      _keyCtrl.clear();
+      _detectedProvider = null;
+      _detectedEnvKey = null;
+    } catch (e) {
+      _snack('Could not save key: $e', const Color(0xFF7F1D1D));
+    }
   }
 
   Future<void> _deleteKey(String envKey) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('graystone_key_$envKey');
-    setState(() => _savedKeys.remove(envKey));
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('graystone_key_$envKey');
+      setState(() => _savedKeys.remove(envKey));
+    } catch (e) {
+      _snack('Could not delete key: $e', const Color(0xFF7F1D1D));
+    }
   }
 
   // SECURITY: never hardcode real API keys in source. Fill these in at runtime
@@ -92,15 +111,15 @@ class _ApiKeysScreenState extends State<ApiKeysScreen> {
       }
       return;
     }
-    final prefs = await SharedPreferences.getInstance();
-    for (final e in presets.entries) {
-      await prefs.setString('graystone_key_${e.key}', e.value);
-    }
-    setState(() => _savedKeys.addAll(presets));
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('All API keys loaded!'),
-          backgroundColor: Color(0xFF065F46)));
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      for (final e in presets.entries) {
+        await prefs.setString('graystone_key_${e.key}', e.value);
+      }
+      setState(() => _savedKeys.addAll(presets));
+      _snack('All API keys loaded!', const Color(0xFF065F46));
+    } catch (e) {
+      _snack('Could not load preset keys: $e', const Color(0xFF7F1D1D));
     }
   }
 
@@ -290,14 +309,21 @@ class _ApiKeysScreenState extends State<ApiKeysScreen> {
   Future<void> _exportEnv() async {
     if (_savedKeys.isEmpty) return;
     final content = _savedKeys.entries.map((e) => '${e.key}=${e.value}').join('\n');
-    await BatService.runBat(
-      '@echo off\n(echo ${content.replaceAll('\n', ') & (echo ')}) > "%DESKTOP%\\.env"\necho .env saved to Desktop.\npause',
-      'export-env.bat');
+    try {
+      await BatService.saveBatToDesktop('.env', content);
+      _snack('.env saved to Desktop.', const Color(0xFF065F46));
+    } catch (e) {
+      _snack('Could not export .env: $e', const Color(0xFF7F1D1D));
+    }
   }
 
   Future<void> _clearAll() async {
-    final prefs = await SharedPreferences.getInstance();
-    for (final k in _savedKeys.keys) await prefs.remove('graystone_key_$k');
-    setState(() => _savedKeys = {});
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      for (final k in _savedKeys.keys) await prefs.remove('graystone_key_$k');
+      setState(() => _savedKeys = {});
+    } catch (e) {
+      _snack('Could not clear keys: $e', const Color(0xFF7F1D1D));
+    }
   }
 }

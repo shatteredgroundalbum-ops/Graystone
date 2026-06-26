@@ -257,16 +257,37 @@ class GBadge extends StatelessWidget {
 // Shared in-memory log buffer for screens that stream operation output.
 mixin LogMixin<T extends StatefulWidget> on State<T> {
   String log = '';
-  void appendLog(String msg) => setState(() => log += '$msg\n');
-  void clearLog() => setState(() => log = '');
+  void appendLog(String msg) {
+    if (mounted) setState(() => log += '$msg\n');
+  }
+  void clearLog() {
+    if (mounted) setState(() => log = '');
+  }
+
+  /// Runs [action], logging a failure line instead of letting the exception
+  /// crash the UI. Returns true on success.
+  Future<bool> runLogged(Future<void> Function() action,
+      {required String onError}) async {
+    try {
+      await action();
+      return true;
+    } catch (e) {
+      appendLog('✖ $onError: $e');
+      return false;
+    }
+  }
 }
 
 // ── DirectoryPickerMixin ────────────────────
 // Shared "Browse" handler that pipes the chosen directory into a controller.
 mixin DirectoryPickerMixin<T extends StatefulWidget> on State<T> {
   Future<void> pickDirectoryInto(TextEditingController controller) async {
-    final result = await FilePicker.platform.getDirectoryPath();
-    if (result != null) setState(() => controller.text = result);
+    try {
+      final result = await FilePicker.platform.getDirectoryPath();
+      if (result != null && mounted) setState(() => controller.text = result);
+    } catch (_) {
+      // File picker unavailable / cancelled — leave the field unchanged.
+    }
   }
 }
 

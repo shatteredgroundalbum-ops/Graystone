@@ -155,14 +155,9 @@ class _ApiKeysScreenState extends State<ApiKeysScreen> {
     return GScreen(
       title: 'API Key Manager',
       subtitle: 'Paste any key — auto-detected and saved securely',
-      child: Row(children: [
-
-        // LEFT — input
-        Container(
-          width: 340,
-          decoration: const BoxDecoration(
-            border: Border(right: BorderSide(color: kBorder))),
-          child: SingleChildScrollView(
+      child: LayoutBuilder(builder: (context, c) {
+        final wide = c.maxWidth >= 760;
+        final left = SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
 
@@ -242,12 +237,8 @@ class _ApiKeysScreenState extends State<ApiKeysScreen> {
               GBtn(label: '⚡ Load All Your Keys', onTap: _loadPresetKeys,
                 fullWidth: true, color: const Color(0xFF78350F), textColor: kWarning),
             ]),
-          ),
-        ),
-
-        // RIGHT — saved keys
-        Expanded(
-          child: Padding(
+          );
+        final right = Padding(
             padding: const EdgeInsets.all(16),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(children: [
@@ -300,9 +291,26 @@ class _ApiKeysScreenState extends State<ApiKeysScreen> {
                 ),
               ),
             ]),
-          ),
-        ),
-      ]),
+          );
+        if (wide) {
+          return Row(children: [
+            Container(
+              width: 340,
+              decoration: const BoxDecoration(
+                border: Border(right: BorderSide(color: kBorder))),
+              child: left),
+            Expanded(child: right),
+          ]);
+        }
+        return Column(children: [
+          Expanded(
+            child: Container(
+              decoration: const BoxDecoration(
+                border: Border(bottom: BorderSide(color: kBorder))),
+              child: left)),
+          Expanded(child: right),
+        ]);
+      }),
     );
   }
 
@@ -310,8 +318,8 @@ class _ApiKeysScreenState extends State<ApiKeysScreen> {
     if (_savedKeys.isEmpty) return;
     final content = _savedKeys.entries.map((e) => '${e.key}=${e.value}').join('\n');
     try {
-      await BatService.saveBatToDesktop('.env', content);
-      _snack('.env saved to Desktop.', const Color(0xFF065F46));
+      final path = await BatService.exportFile('.env', content);
+      _snack('.env saved to $path', const Color(0xFF065F46));
     } catch (e) {
       _snack('Could not export .env: $e', const Color(0xFF7F1D1D));
     }

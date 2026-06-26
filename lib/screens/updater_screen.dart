@@ -193,6 +193,7 @@ pause''';
   @override
   Widget build(BuildContext context) {
     return GScreen(
+      windowsOnly: true,
       title: 'Updater',
       subtitle: 'Check for and install Graystone updates',
       child: Row(children: [

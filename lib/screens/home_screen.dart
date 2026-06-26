@@ -60,13 +60,15 @@ class HomeScreen extends StatelessWidget {
                 style: TextStyle(color: kMuted, fontSize: 13)),
               const SizedBox(height: 24),
 
-              GridView.count(
+              LayoutBuilder(builder: (context, c) {
+                final cols = c.maxWidth >= 900 ? 3 : c.maxWidth >= 560 ? 2 : 1;
+                return GridView.count(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
-                crossAxisCount: 3,
+                crossAxisCount: cols,
                 crossAxisSpacing: 14,
                 mainAxisSpacing: 14,
-                childAspectRatio: 1.4,
+                childAspectRatio: cols == 1 ? 2.6 : 1.4,
                 children: [
                   _NavCard(
                     icon: Icons.grid_view,
@@ -118,7 +120,8 @@ class HomeScreen extends StatelessWidget {
                     route: '/updater',
                   ),
                 ],
-              ),
+              );
+              }),
 
               const SizedBox(height: 24),
 

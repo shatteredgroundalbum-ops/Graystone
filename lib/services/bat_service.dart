@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:path_provider/path_provider.dart';
 
 /// Thrown when generating, writing, or launching a batch script fails.
@@ -11,6 +12,9 @@ class BatServiceException implements Exception {
 }
 
 class BatService {
+  /// The .bat / PowerShell automation only works on the Windows build.
+  static bool get isWindows => !kIsWeb && Platform.isWindows;
+
   static String get _userProfile => Platform.environment['USERPROFILE'] ?? '';
   static String get desktop => '$_userProfile\\Desktop';
 
@@ -48,6 +52,10 @@ set STORAGE=%APPDATA_DIR%\\anythingllm-desktop\\storage
   }
 
   static Future<String> runBat(String content, String name) async {
+    if (!isWindows) {
+      throw BatServiceException(
+        'This tool runs a Windows script and is only available on the Windows build of Graystone.');
+    }
     final path = await writeBat(name, content);
     try {
       await Process.start('cmd', ['/c', 'start', 'cmd', '/k', path],
@@ -67,6 +75,31 @@ set STORAGE=%APPDATA_DIR%\\anythingllm-desktop\\storage
       await file.writeAsString(content);
     } catch (e) {
       throw BatServiceException('Could not save "$name" to Desktop', e);
+    }
+  }
+
+  /// Writes [content] to a user-retrievable file and returns its full path.
+  /// On Windows this is the Desktop; on Android/other platforms it is the
+  /// app's external (or documents) directory, which works without cmd.exe.
+  static Future<String> exportFile(String name, String content) async {
+    try {
+      final String dirPath;
+      if (isWindows) {
+        if (_userProfile.isEmpty) {
+          throw BatServiceException('USERPROFILE is not set; cannot locate Desktop');
+        }
+        dirPath = desktop;
+      } else {
+        final dir = await getExternalStorageDirectory() ??
+            await getApplicationDocumentsDirectory();
+        dirPath = dir.path;
+      }
+      final file = File('$dirPath${Platform.pathSeparator}$name');
+      await file.writeAsString(content);
+      return file.path;
+    } catch (e) {
+      if (e is BatServiceException) rethrow;
+      throw BatServiceException('Could not export "$name"', e);
     }
   }
 

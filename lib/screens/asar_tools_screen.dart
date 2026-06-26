@@ -29,6 +29,7 @@ class _AsarToolsScreenState extends State<AsarToolsScreen>
   @override
   Widget build(BuildContext context) {
     return GScreen(
+      windowsOnly: true,
       title: 'ASAR Tools',
       subtitle: 'Extract, repack, and install files into AnythingLLM',
       child: Row(children: [

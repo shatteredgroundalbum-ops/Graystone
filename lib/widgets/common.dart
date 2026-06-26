@@ -1,5 +1,11 @@
+import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+
+/// True only on the Windows desktop build, where the .bat/PowerShell
+/// automation can actually run.
+bool get kIsWindows => !kIsWeb && Platform.isWindows;
 
 // ── Colors ──────────────────────────────────
 const kBg       = Color(0xFF0B1020);
@@ -291,6 +297,31 @@ mixin DirectoryPickerMixin<T extends StatefulWidget> on State<T> {
   }
 }
 
+// ── Windows-only banner ─────────────────────
+class GWindowsOnlyBanner extends StatelessWidget {
+  final String feature;
+  const GWindowsOnlyBanner({super.key, this.feature = 'This module'});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      color: const Color(0xFF78350F),
+      child: Row(children: [
+        const Icon(Icons.desktop_windows, color: kWarning, size: 16),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            '$feature runs Windows scripts and is only available on the '
+            'Windows build of Graystone.',
+            style: const TextStyle(color: kWarning, fontSize: 12)),
+        ),
+      ]),
+    );
+  }
+}
+
 // ── Screen wrapper ──────────────────────────
 class GScreen extends StatelessWidget {
   final String title;
@@ -298,7 +329,11 @@ class GScreen extends StatelessWidget {
   final Widget child;
   final List<Widget>? actions;
 
-  const GScreen({super.key, required this.title, this.subtitle, required this.child, this.actions});
+  /// When true, a banner is shown on non-Windows builds explaining that the
+  /// module's Windows automation is unavailable.
+  final bool windowsOnly;
+
+  const GScreen({super.key, required this.title, this.subtitle, required this.child, this.actions, this.windowsOnly = false});
 
   @override
   Widget build(BuildContext context) {
@@ -322,7 +357,9 @@ class GScreen extends StatelessWidget {
           child: Container(height: 1, color: kBorder),
         ),
       ),
-      body: child,
+      body: windowsOnly && !kIsWindows
+        ? Column(children: [const GWindowsOnlyBanner(), Expanded(child: child)])
+        : child,
     );
   }
 }

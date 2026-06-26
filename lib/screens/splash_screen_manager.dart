@@ -55,6 +55,7 @@ class _SplashScreenManagerState extends State<SplashScreenManager>
   @override
   Widget build(BuildContext context) {
     return GScreen(
+      windowsOnly: true,
       title: 'Splash Screen Manager',
       subtitle: 'Install the Graystone splash screen into AnythingLLM',
       child: Row(children: [

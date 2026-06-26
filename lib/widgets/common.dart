@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
 
 // ── Colors ──────────────────────────────────
 const kBg       = Color(0xFF0B1020);
@@ -149,6 +150,38 @@ class GInput extends StatelessWidget {
   }
 }
 
+// ── GLogPanel ───────────────────────────────
+// The title row (+ Clear button) above an expanding log box, shared by every
+// screen that shows an operation log.
+class GLogPanel extends StatelessWidget {
+  final String title;
+  final String log;
+  final VoidCallback onClear;
+  final double titleSize;
+  final double gap;
+  const GLogPanel({
+    super.key,
+    required this.title,
+    required this.log,
+    required this.onClear,
+    this.titleSize = 16,
+    this.gap = 12,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Row(children: [
+        Text(title, style: TextStyle(color: kText, fontWeight: FontWeight.w700, fontSize: titleSize)),
+        const Spacer(),
+        GBtn(label: 'Clear', onTap: onClear, color: kPanel2, textColor: kMuted),
+      ]),
+      SizedBox(height: gap),
+      Expanded(child: GLogBox(log)),
+    ]);
+  }
+}
+
 // ── GLogBox ─────────────────────────────────
 class GLogBox extends StatelessWidget {
   final String log;
@@ -217,6 +250,23 @@ class GBadge extends StatelessWidget {
       decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(4)),
       child: Text(text, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: textColor)),
     );
+  }
+}
+
+// ── LogMixin ────────────────────────────────
+// Shared in-memory log buffer for screens that stream operation output.
+mixin LogMixin<T extends StatefulWidget> on State<T> {
+  String log = '';
+  void appendLog(String msg) => setState(() => log += '$msg\n');
+  void clearLog() => setState(() => log = '');
+}
+
+// ── DirectoryPickerMixin ────────────────────
+// Shared "Browse" handler that pipes the chosen directory into a controller.
+mixin DirectoryPickerMixin<T extends StatefulWidget> on State<T> {
+  Future<void> pickDirectoryInto(TextEditingController controller) async {
+    final result = await FilePicker.platform.getDirectoryPath();
+    if (result != null) setState(() => controller.text = result);
   }
 }
 

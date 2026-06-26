@@ -24,14 +24,19 @@ class UpdaterScreen extends StatefulWidget {
   @override State<UpdaterScreen> createState() => _UpdaterScreenState();
 }
 
-class _UpdaterScreenState extends State<UpdaterScreen> {
+class _UpdaterScreenState extends State<UpdaterScreen> with LogMixin {
   String _status = 'idle';
   String _latestVersion = '';
   String _releaseNotes = '';
   String _downloadUrl = '';
-  String _log = 'Updater ready.\nCurrent version: v$_currentVersion\n';
 
   final TextEditingController _urlCtrl = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    log = 'Updater ready.\nCurrent version: v$_currentVersion\n';
+  }
 
   @override
   void dispose() {
@@ -39,7 +44,7 @@ class _UpdaterScreenState extends State<UpdaterScreen> {
     super.dispose();
   }
 
-  void _appendLog(String msg) => setState(() => _log += '$msg\n');
+  void _appendLog(String msg) => appendLog(msg);
 
   // ── Manual update: pick an installer/update file from this PC ──────────────
   Future<void> _installFromFile() async {
@@ -277,17 +282,7 @@ pause''';
         Expanded(
           child: Padding(
             padding: const EdgeInsets.all(16),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Row(children: [
-                const Text('Update Log',
-                  style: TextStyle(color: kText, fontWeight: FontWeight.w700, fontSize: 16)),
-                const Spacer(),
-                GBtn(label: 'Clear', onTap: () => setState(() => _log = ''),
-                  color: kPanel2, textColor: kMuted),
-              ]),
-              const SizedBox(height: 12),
-              Expanded(child: GLogBox(_log)),
-            ]),
+            child: GLogPanel(title: 'Update Log', log: log, onClear: clearLog),
           ),
         ),
       ]),

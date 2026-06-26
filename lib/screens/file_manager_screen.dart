@@ -8,14 +8,20 @@ class FileManagerScreen extends StatefulWidget {
   @override State<FileManagerScreen> createState() => _FileManagerScreenState();
 }
 
-class _FileManagerScreenState extends State<FileManagerScreen> {
+class _FileManagerScreenState extends State<FileManagerScreen>
+    with LogMixin, DirectoryPickerMixin {
   final _folderCtrl   = TextEditingController();
   final _patternCtrl  = TextEditingController(text: '*.js');
   final _findCtrl     = TextEditingController();
   final _replaceCtrl  = TextEditingController();
   String _task        = 'Find files';
-  String _log         = 'File Manager ready.\nSelect a task and click Run.\n';
   List<PlatformFile> _attached = [];
+
+  @override
+  void initState() {
+    super.initState();
+    log = 'File Manager ready.\nSelect a task and click Run.\n';
+  }
 
   final _tasks = [
     'Find files', 'Replace text in files', 'Copy files',
@@ -29,13 +35,6 @@ class _FileManagerScreenState extends State<FileManagerScreen> {
     'ASAR Extracted':       r'%LOCALAPPDATA%\Programs\AnythingLLM\resources\app.asar.extracted',
   };
 
-  void _appendLog(String msg) => setState(() => _log += '$msg\n');
-
-  Future<void> _browseFolder() async {
-    final result = await FilePicker.platform.getDirectoryPath();
-    if (result != null) setState(() => _folderCtrl.text = result);
-  }
-
   Future<void> _attachFiles() async {
     final result = await FilePicker.platform.pickFiles(allowMultiple: true, withData: false);
     if (result != null) setState(() => _attached.addAll(result.files));
@@ -47,9 +46,9 @@ class _FileManagerScreenState extends State<FileManagerScreen> {
     final find    = _findCtrl.text.trim();
     final replace = _replaceCtrl.text.trim();
 
-    _appendLog('▶ Task: $_task');
-    if (folder.isNotEmpty) _appendLog('  Path: $folder');
-    _appendLog('  Pattern: $pattern\n');
+    appendLog('▶ Task: $_task');
+    if (folder.isNotEmpty) appendLog('  Path: $folder');
+    appendLog('  Pattern: $pattern\n');
 
     String bat = '';
     String fname = 'task.bat';
@@ -76,7 +75,7 @@ class _FileManagerScreenState extends State<FileManagerScreen> {
     }
 
     await BatService.runBat(bat, fname);
-    _appendLog('✓ Generated $fname and launched in terminal\n');
+    appendLog('✓ Generated $fname and launched in terminal\n');
   }
 
   @override
@@ -123,7 +122,7 @@ class _FileManagerScreenState extends State<FileManagerScreen> {
                   onChanged: (v) { if (v != null) setState(() => _task = v); },
                 ),
                 const SizedBox(height: 12),
-                GInput(label: 'Folder Path', hint: r'C:\Users\...', controller: _folderCtrl, onBrowse: _browseFolder),
+                GInput(label: 'Folder Path', hint: r'C:\Users\...', controller: _folderCtrl, onBrowse: () => pickDirectoryInto(_folderCtrl)),
                 GInput(label: 'File Pattern', hint: '*.js', controller: _patternCtrl),
                 if (_task == 'Replace text in files') ...[
                   GInput(label: 'Find Text', controller: _findCtrl),
@@ -165,17 +164,7 @@ class _FileManagerScreenState extends State<FileManagerScreen> {
         Expanded(
           child: Padding(
             padding: const EdgeInsets.all(16),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Row(children: [
-                const Text('Operation Log',
-                  style: TextStyle(color: kText, fontWeight: FontWeight.w700, fontSize: 16)),
-                const Spacer(),
-                GBtn(label: 'Clear', onTap: () => setState(() => _log = ''),
-                  color: kPanel2, textColor: kMuted),
-              ]),
-              const SizedBox(height: 12),
-              Expanded(child: GLogBox(_log)),
-            ]),
+            child: GLogPanel(title: 'Operation Log', log: log, onClear: clearLog),
           ),
         ),
       ]),

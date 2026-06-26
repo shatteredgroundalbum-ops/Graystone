@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:file_picker/file_picker.dart';
 import '../widgets/common.dart';
 import '../services/bat_service.dart';
 
@@ -8,22 +7,21 @@ class AsarToolsScreen extends StatefulWidget {
   @override State<AsarToolsScreen> createState() => _AsarToolsScreenState();
 }
 
-class _AsarToolsScreenState extends State<AsarToolsScreen> {
+class _AsarToolsScreenState extends State<AsarToolsScreen>
+    with LogMixin, DirectoryPickerMixin {
   final _installSrcCtrl  = TextEditingController();
   final _findFileCtrl    = TextEditingController(text: 'splash.js');
-  String _log = 'ASAR Tools ready.\nClick any operation to run it.\n';
 
-  void _appendLog(String msg) => setState(() => _log += '$msg\n');
-
-  Future<void> _runOp(String bat, String fname, String label) async {
-    _appendLog('▶ $label');
-    await BatService.runBat(bat, fname);
-    _appendLog('✓ Running in terminal...\n');
+  @override
+  void initState() {
+    super.initState();
+    log = 'ASAR Tools ready.\nClick any operation to run it.\n';
   }
 
-  Future<void> _browseSrc() async {
-    final result = await FilePicker.platform.getDirectoryPath();
-    if (result != null) setState(() => _installSrcCtrl.text = result);
+  Future<void> _runOp(String bat, String fname, String label) async {
+    appendLog('▶ $label');
+    await BatService.runBat(bat, fname);
+    appendLog('✓ Running in terminal...\n');
   }
 
   @override
@@ -86,10 +84,10 @@ class _AsarToolsScreenState extends State<AsarToolsScreen> {
                   style: TextStyle(color: kMuted, fontSize: 11), maxLines: 3),
                 const SizedBox(height: 10),
                 GInput(label: 'Source Folder', hint: r'C:\Users\...\my-files',
-                  controller: _installSrcCtrl, onBrowse: _browseSrc),
+                  controller: _installSrcCtrl, onBrowse: () => pickDirectoryInto(_installSrcCtrl)),
                 _OpBtn('⬆ Install Files + Repack ASAR', const Color(0xFF7F1D1D), () {
                   final src = _installSrcCtrl.text.trim();
-                  if (src.isEmpty) { _appendLog('⚠ Select a source folder first.'); return; }
+                  if (src.isEmpty) { appendLog('⚠ Select a source folder first.'); return; }
                   _runOp(BatService.installFilesBat(src), 'install-repack.bat', 'Install + Repack');
                 }),
               ])),
@@ -101,17 +99,7 @@ class _AsarToolsScreenState extends State<AsarToolsScreen> {
         Expanded(
           child: Padding(
             padding: const EdgeInsets.all(16),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Row(children: [
-                const Text('ASAR Log',
-                  style: TextStyle(color: kText, fontWeight: FontWeight.w700, fontSize: 16)),
-                const Spacer(),
-                GBtn(label: 'Clear', onTap: () => setState(() => _log = ''),
-                  color: kPanel2, textColor: kMuted),
-              ]),
-              const SizedBox(height: 12),
-              Expanded(child: GLogBox(_log)),
-            ]),
+            child: GLogPanel(title: 'ASAR Log', log: log, onClear: clearLog),
           ),
         ),
       ]),

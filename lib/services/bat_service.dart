@@ -3,7 +3,7 @@ import 'package:path_provider/path_provider.dart';
 
 class BatService {
   static String get _userProfile => Platform.environment['USERPROFILE'] ?? '';
-  static String get _desktop => '$_userProfile\\Desktop';
+  static String get desktop => '$_userProfile\\Desktop';
 
   static const anythingLlmPaths = {
     'Install':   r'%LOCALAPPDATA%\Programs\AnythingLLM\resources',
@@ -38,7 +38,6 @@ set STORAGE=%APPDATA_DIR%\\anythingllm-desktop\\storage
   }
 
   static Future<void> saveBatToDesktop(String name, String content) async {
-    final desktop = _desktop;
     final file = File('$desktop\\$name');
     await file.writeAsString(content);
   }

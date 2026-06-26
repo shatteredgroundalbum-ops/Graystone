@@ -25,7 +25,12 @@ class _ChatScreenState extends State<ChatScreen> {
   bool _loadingOptions = false;
   String? _optionsError;
   bool _sending = false;
-  String? _loadedFor; // connection id we last fetched options for
+  String? _loadedFor; // signature of the connection we last fetched options for
+
+  // Identity of everything that affects which options a server returns; when
+  // any of these change (e.g. the connection is edited) the cache is stale.
+  String _signatureOf(Connection c) =>
+      '${c.id}|${c.type}|${c.baseUrl}|${c.apiKey}';
 
   @override
   void initState() {
@@ -55,7 +60,7 @@ class _ChatScreenState extends State<ChatScreen> {
   Future<void> _maybeLoadOptions() async {
     final c = _conn;
     if (c == null) return;
-    if (_loadedFor == c.id && _optionsError == null) return;
+    if (_loadedFor == _signatureOf(c) && _optionsError == null) return;
     setState(() {
       _loadingOptions = true;
       _optionsError = null;
@@ -66,7 +71,7 @@ class _ChatScreenState extends State<ChatScreen> {
       if (!mounted) return;
       setState(() {
         _options = opts;
-        _loadedFor = c.id;
+        _loadedFor = _signatureOf(c);
         if (c.option == null ||
             !opts.any((o) => o.id == c.option)) {
           c.option = opts.isNotEmpty ? opts.first.id : null;

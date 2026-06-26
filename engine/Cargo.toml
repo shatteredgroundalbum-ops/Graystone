@@ -1,0 +1,31 @@
+[workspace]
+resolver = "2"
+members = [
+    "graystone_core",
+    "graystone_policy",
+    "graystone_license",
+    "graystone_readme",
+    "graystone_project_scan",
+    "graystone_index",
+    "graystone_search",
+    "graystone_profiles",
+    "graystone_ast",
+    "graystone_cst",
+    "graystone_patch",
+    "graystone_diff",
+    "graystone_backup",
+    "graystone_restore",
+    "graystone_update",
+    "graystone_build",
+    "graystone_ai_bridge",
+    "graystone_logs",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+repository = "https://github.com/shatteredgroundalbum-ops/Graystone"
+
+[workspace.dependencies]
+flutter_rust_bridge = "=2.11.1"

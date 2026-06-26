@@ -1,0 +1,41 @@
+[package]
+name = "graystone_core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[lints.rust]
+# `frb_expand` is set by the flutter_rust_bridge macro during its own expansion;
+# declare it so it isn't flagged as an unknown cfg under `-D warnings`.
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(frb_expand)'] }
+
+[lib]
+# `cdylib` produces the Android `.so` / Windows `.dll` the Flutter UI loads over
+# FFI. `staticlib` covers iOS/desktop static linking. `lib` keeps the crate
+# usable from Rust tests and other crates.
+crate-type = ["cdylib", "staticlib", "lib"]
+
+[dependencies]
+flutter_rust_bridge = { workspace = true }
+
+# Engine modules. graystone_core orchestrates them and re-exports a stable FFI
+# surface for the UI. Phase 0 wires them all into the workspace; later phases
+# fill in their implementations.
+graystone_policy = { path = "../graystone_policy" }
+graystone_license = { path = "../graystone_license" }
+graystone_readme = { path = "../graystone_readme" }
+graystone_project_scan = { path = "../graystone_project_scan" }
+graystone_index = { path = "../graystone_index" }
+graystone_search = { path = "../graystone_search" }
+graystone_profiles = { path = "../graystone_profiles" }
+graystone_ast = { path = "../graystone_ast" }
+graystone_cst = { path = "../graystone_cst" }
+graystone_patch = { path = "../graystone_patch" }
+graystone_diff = { path = "../graystone_diff" }
+graystone_backup = { path = "../graystone_backup" }
+graystone_restore = { path = "../graystone_restore" }
+graystone_update = { path = "../graystone_update" }
+graystone_build = { path = "../graystone_build" }
+graystone_ai_bridge = { path = "../graystone_ai_bridge" }
+graystone_logs = { path = "../graystone_logs" }

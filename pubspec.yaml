@@ -4,7 +4,8 @@ publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-  sdk: '>=3.0.0 <4.0.0'
+  # flutter_rust_bridge's generated bindings use extension types (Dart 3.3+).
+  sdk: '>=3.3.0 <4.0.0'
 
 dependencies:
   flutter:
@@ -28,6 +29,8 @@ dependencies:
   package_info_plus: ^6.0.0
   # Windows registry (for PATH)
   win32: ^5.4.0
+  # FFI bridge to the Rust engine (engine/graystone_core)
+  flutter_rust_bridge: 2.11.1
 
 dev_dependencies:
   flutter_test:

@@ -48,11 +48,17 @@ class _UpdaterScreenState extends State<UpdaterScreen> with LogMixin {
 
   // ── Manual update: pick an installer/update file from this PC ──────────────
   Future<void> _installFromFile() async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: const ['exe', 'msix', 'bat', 'zip'],
-      dialogTitle: 'Select a Graystone installer or update file',
-    );
+    FilePickerResult? result;
+    try {
+      result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: const ['exe', 'msix', 'bat', 'zip'],
+        dialogTitle: 'Select a Graystone installer or update file',
+      );
+    } catch (e) {
+      _appendLog('✗ Could not open file picker: $e\n');
+      return;
+    }
     final path = result?.files.single.path;
     if (path == null) {
       _appendLog('Install from file cancelled.');
@@ -104,8 +110,10 @@ pause''';
     var name = url.split('?').first.split('/').last;
     if (name.isEmpty || !name.contains('.')) name = 'Graystone-Update.exe';
     final bat = _downloadInstallBat(url, name);
-    await BatService.runBat(bat, 'graystone-update-from-url.bat');
-    _appendLog('▶ Downloading + installing "$name" from URL. Follow the window.\n');
+    await runLogged(() async {
+      await BatService.runBat(bat, 'graystone-update-from-url.bat');
+      _appendLog('▶ Downloading + installing "$name" from URL. Follow the window.\n');
+    }, onError: 'Could not start update from URL');
   }
 
   Future<void> _checkForUpdates() async {
@@ -157,20 +165,28 @@ pause''';
   }
 
   bool _isNewer(String latest, String current) {
-    final l = latest.split('.').map(int.parse).toList();
-    final c = current.split('.').map(int.parse).toList();
+    int part(List<String> parts, int i) =>
+        i < parts.length ? (int.tryParse(parts[i]) ?? 0) : 0;
+    final l = latest.split('.');
+    final c = current.split('.');
     for (int i = 0; i < 3; i++) {
-      if ((l.length > i ? l[i] : 0) > (c.length > i ? c[i] : 0)) return true;
-      if ((l.length > i ? l[i] : 0) < (c.length > i ? c[i] : 0)) return false;
+      if (part(l, i) > part(c, i)) return true;
+      if (part(l, i) < part(c, i)) return false;
     }
     return false;
   }
 
   Future<void> _downloadUpdate() async {
     final uri = Uri.parse(_downloadUrl.isNotEmpty ? _downloadUrl : _releasesUrl);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-      _appendLog('▶ Opened download page in browser.\n');
+    try {
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+        _appendLog('▶ Opened download page in browser.\n');
+      } else {
+        _appendLog('✗ Could not open the download page. Visit $_releasesUrl manually.\n');
+      }
+    } catch (e) {
+      _appendLog('✗ Could not open the download page: $e\n');
     }
   }
 
@@ -314,8 +330,10 @@ pause''';
   Future<void> _generateUpdateBat() async {
     final url = 'https://github.com/$_repoSlug/releases/latest/download/$_updateAssetName';
     final bat = _downloadInstallBat(url, _updateAssetName);
-    await BatService.runBat(bat, 'update-graystone.bat');
-    _appendLog('✓ Generated update-graystone.bat (pulls latest from GitHub)\n');
+    await runLogged(() async {
+      await BatService.runBat(bat, 'update-graystone.bat');
+      _appendLog('✓ Generated update-graystone.bat (pulls latest from GitHub)\n');
+    }, onError: 'Could not run update-graystone.bat');
   }
 }
 

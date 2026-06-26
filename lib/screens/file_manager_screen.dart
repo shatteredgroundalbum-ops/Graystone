@@ -36,8 +36,12 @@ class _FileManagerScreenState extends State<FileManagerScreen>
   };
 
   Future<void> _attachFiles() async {
-    final result = await FilePicker.platform.pickFiles(allowMultiple: true, withData: false);
-    if (result != null) setState(() => _attached.addAll(result.files));
+    try {
+      final result = await FilePicker.platform.pickFiles(allowMultiple: true, withData: false);
+      if (result != null && mounted) setState(() => _attached.addAll(result.files));
+    } catch (e) {
+      appendLog('✖ Could not attach files: $e');
+    }
   }
 
   Future<void> _runTask() async {
@@ -74,8 +78,10 @@ class _FileManagerScreenState extends State<FileManagerScreen>
         bat = BatService.header() + '\necho $_task\npause';
     }
 
-    await BatService.runBat(bat, fname);
-    appendLog('✓ Generated $fname and launched in terminal\n');
+    await runLogged(() async {
+      await BatService.runBat(bat, fname);
+      appendLog('✓ Generated $fname and launched in terminal\n');
+    }, onError: 'Could not run $fname');
   }
 
   @override

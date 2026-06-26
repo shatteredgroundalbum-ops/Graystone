@@ -46,23 +46,29 @@ class _LanguageInstallerScreenState extends State<LanguageInstallerScreen> with 
     final lang = _langs[_selected!];
     appendLog('▶ Downloading ${lang['name']}...');
     final bat = BatService.downloadLangBat(lang['name']!, lang['url']!, lang['file']!);
-    await BatService.runBat(bat, 'download-${lang['name']!.replaceAll(' ', '-').toLowerCase()}.bat');
-    setState(() => _statuses[_selected!] = 'Downloading...');
-    appendLog('✓ Download started in terminal\n');
+    await runLogged(() async {
+      await BatService.runBat(bat, 'download-${lang['name']!.replaceAll(' ', '-').toLowerCase()}.bat');
+      setState(() => _statuses[_selected!] = 'Downloading...');
+      appendLog('✓ Download started in terminal\n');
+    }, onError: 'Could not start download for ${lang['name']}');
   }
 
   Future<void> _downloadAll() async {
     appendLog('▶ Generating download-all-languages.bat...');
     final bat = BatService.downloadAllLangsBat(
       _langs.map((l) => {'name': l['name']!, 'url': l['url']!, 'file': l['file']!}).toList());
-    await BatService.runBat(bat, 'download-all-languages.bat');
-    appendLog('✓ All-languages downloader launched in terminal\n');
+    await runLogged(() async {
+      await BatService.runBat(bat, 'download-all-languages.bat');
+      appendLog('✓ All-languages downloader launched in terminal\n');
+    }, onError: 'Could not run download-all-languages.bat');
   }
 
   Future<void> _checkInstalled() async {
     appendLog('▶ Checking installed languages...');
-    await BatService.runBat(BatService.checkLangsBat(), 'check-languages.bat');
-    appendLog('✓ Check running in terminal\n');
+    await runLogged(() async {
+      await BatService.runBat(BatService.checkLangsBat(), 'check-languages.bat');
+      appendLog('✓ Check running in terminal\n');
+    }, onError: 'Could not run check-languages.bat');
   }
 
   Color _typeColor(String type) {
@@ -172,11 +178,11 @@ class _LanguageInstallerScreenState extends State<LanguageInstallerScreen> with 
                 const GPathBox(r'%USERPROFILE%\Graystone_Languages\'),
                 GBtn(label: '📂 Open Folder', fullWidth: true,
                   color: kPanel2, textColor: kAccent2,
-                  onTap: () async {
+                  onTap: () => runLogged(() async {
                     await BatService.runBat(
                       '@echo off\nstart "" "%USERPROFILE%\\Graystone_Languages"\n',
                       'open-langs.bat');
-                  }),
+                  }, onError: 'Could not open languages folder')),
               ])),
             ]),
           ),

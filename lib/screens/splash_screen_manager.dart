@@ -38,14 +38,18 @@ class _SplashScreenManagerState extends State<SplashScreenManager>
     final src = _srcCtrl.text.trim();
     if (src.isEmpty) { appendLog('⚠ Select folder with splash files first.'); return; }
     appendLog('▶ Installing Graystone splash...');
-    await BatService.runBat(BatService.installSplashBat(src), 'install-splash.bat');
-    appendLog('✓ Running installer in terminal\n');
+    await runLogged(() async {
+      await BatService.runBat(BatService.installSplashBat(src), 'install-splash.bat');
+      appendLog('✓ Running installer in terminal\n');
+    }, onError: 'Could not run install-splash.bat');
   }
 
   Future<void> _restoreSplash() async {
     appendLog('▶ Restoring original splash...');
-    await BatService.runBat(BatService.restoreSplashBat(), 'restore-splash.bat');
-    appendLog('✓ Restore running in terminal\n');
+    await runLogged(() async {
+      await BatService.runBat(BatService.restoreSplashBat(), 'restore-splash.bat');
+      appendLog('✓ Restore running in terminal\n');
+    }, onError: 'Could not run restore-splash.bat');
   }
 
   @override

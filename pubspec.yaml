@@ -1,0 +1,53 @@
+name: graystone
+description: Graystone AI Dev File Manager
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  # File operations
+  path_provider: ^2.1.2
+  file_picker: ^8.0.3
+  # Process / shell
+  process_run: ^0.14.1
+  # HTTP for update checking
+  http: ^1.2.1
+  # URL launcher
+  url_launcher: ^6.2.5
+  # Archive (zip)
+  archive: ^3.4.10
+  # Shared prefs (API keys storage)
+  shared_preferences: ^2.2.3
+  # Icons
+  flutter_svg: ^2.0.10
+  # Version comparison
+  package_info_plus: ^6.0.0
+  # Windows registry (for PATH)
+  win32: ^5.4.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+  # Build to exe
+  msix: ^3.16.7
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/splash.png
+    - assets/icon.png
+
+msix_config:
+  display_name: Graystone
+  publisher_display_name: Graystone
+  identity_name: com.graystone.filemanager
+  msix_version: 1.0.0.0
+  logo_path: assets/icon.png
+  start_menu_icon_path: assets/icon.png
+  tile_background_color: '7C3AED'
+  capabilities: 'rescap:broadFileSystemAccess'
